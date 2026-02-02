@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(214.3 31.8% 91.4%)",
+                        input: "hsl(214.3 31.8% 91.4%)",
+                        ring: "hsl(222.2 84% 4.9%)",
+                        background: "hsl(0 0% 100%)",
+                        foreground: "hsl(222.2 84% 4.9%)",
+                        primary: {
+                            DEFAULT: "hsl(222.2 47.4% 11.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(210 40% 96.1%)",
+                            foreground: "hsl(222.2 47.4% 11.2%)",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(0 84.2% 60.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210 40% 96.1%)",
+                            foreground: "hsl(215.4 16.3% 46.9%)",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(210 40% 96.1%)",
+                            foreground: "hsl(222.2 47.4% 11.2%)",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(0 0% 100%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        card: {
+                            DEFAULT: "hsl(0 0% 100%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "0.5rem",
+                        md: "calc(0.5rem - 2px)",
+                        sm: "calc(0.5rem - 4px)",
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @layer base {
+            * {
+                @apply border-border;
+            }
+            body {
+                @apply bg-background text-foreground;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-lg border shadow-sm p-6 mb-6">
+            <h1 class="text-3xl font-bold text-center mb-2">📚 Library Management System</h1>
+            <p class="text-center text-muted-foreground text-sm">Spring Boot MVC CRUD Application</p>
+        </div>
+
+        <!-- Message Alert -->
+        <div id="message" class="hidden mb-6"></div>
+
+        <!-- Tabs -->
+        <div class="bg-white rounded-lg border shadow-sm mb-6">
+            <div class="border-b border-border">
+                <div class="flex space-x-1 p-1">
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-md transition-colors active" onclick="switchTab('view')">
+                        View Books
+                    </button>
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-md transition-colors" onclick="switchTab('add')">
+                        Add Book
+                    </button>
+                    <button class="tab-btn px-4 py-2 text-sm font-medium rounded-md transition-colors" onclick="switchTab('search')">
+                        Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Books Tab -->
+            <div id="view-tab" class="tab-content p-6">
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-primary text-primary-foreground rounded-lg border p-6">
+                        <div class="text-4xl font-bold mb-1" id="total-books">0</div>
+                        <div class="text-sm opacity-90">Total Books</div>
+                    </div>
+                    <div class="bg-green-600 text-white rounded-lg border p-6">
+                        <div class="text-4xl font-bold mb-1" id="available-books">0</div>
+                        <div class="text-sm opacity-90">Available Books</div>
+                    </div>
+                    <div class="bg-orange-600 text-white rounded-lg border p-6">
+                        <div class="text-4xl font-bold mb-1" id="borrowed-books">0</div>
+                        <div class="text-sm opacity-90">Borrowed Books</div>
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <h2 class="text-2xl font-semibold">All Books</h2>
+                    <div class="flex gap-2">
+                        <button onclick="loadAllBooks()" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                            🔄 Refresh
+                        </button>
+                        <button onclick="loadAvailableBooks()" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-green-600 text-white hover:bg-green-700 h-10 px-4 py-2">
+                            📗 Available Only
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Books Table -->
+                <div class="rounded-md border overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-muted/50">
+                            <tr class="border-b">
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Title</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Author</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ISBN</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Year</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-table-body" class="[&_tr:last-child]:border-0">
+                            <tr class="border-b">
+                                <td colspan="7" class="p-8 text-center text-muted-foreground">
+                                    <div class="text-4xl mb-2">📚</div>
+                                    <div>No books found. Add some books to get started!</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Book Tab -->
+            <div id="add-tab" class="tab-content p-6 hidden">
+                <div class="max-w-2xl">
+                    <h2 class="text-2xl font-semibold mb-6">Add New Book</h2>
+                    <form id="add-book-form" class="space-y-4">
+                        <div class="space-y-2">
+                            <label for="title" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Title <span class="text-destructive">*</span>
+                            </label>
+                            <input type="text" id="title" required
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="author" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Author <span class="text-destructive">*</span>
+                            </label>
+                            <input type="text" id="author" required
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="isbn" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                ISBN
+                            </label>
+                            <input type="text" id="isbn"
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="publishedYear" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Published Year
+                            </label>
+                            <input type="number" id="publishedYear" min="1000" max="2100"
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" id="available" checked
+                                class="peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                            <label for="available" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                Available
+                            </label>
+                        </div>
+                        <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                            Add Book
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Search Tab -->
+            <div id="search-tab" class="tab-content p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold mb-4">Search Books</h2>
+                    <div class="flex gap-2 max-w-2xl">
+                        <input type="text" id="search-author" placeholder="Enter author name..."
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                        <button onclick="searchByAuthor()" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 whitespace-nowrap">
+                            Search by Author
+                        </button>
+                    </div>
+                </div>
+                <div id="search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h2 class="text-2xl font-semibold mb-4">Edit Book</h2>
+            <form id="edit-book-form" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <div class="space-y-2">
+                    <label for="edit-title" class="text-sm font-medium leading-none">
+                        Title <span class="text-destructive">*</span>
+                    </label>
+                    <input type="text" id="edit-title" required
+                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                </div>
+                <div class="space-y-2">
+                    <label for="edit-author" class="text-sm font-medium leading-none">
+                        Author <span class="text-destructive">*</span>
+                    </label>
+                    <input type="text" id="edit-author" required
+                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                </div>
+                <div class="space-y-2">
+                    <label for="edit-isbn" class="text-sm font-medium leading-none">ISBN</label>
+                    <input type="text" id="edit-isbn"
+                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                </div>
+                <div class="space-y-2">
+                    <label for="edit-publishedYear" class="text-sm font-medium leading-none">Published Year</label>
+                    <input type="number" id="edit-publishedYear" min="1000" max="2100"
+                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="edit-available"
+                        class="peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <label for="edit-available" class="text-sm font-medium leading-none">Available</label>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+                        Update Book
+                    </button>
+                    <button type="button" onclick="closeEditModal()" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .tab-btn {
+            color: hsl(215.4 16.3% 46.9%);
+        }
+        .tab-btn:hover {
+            background-color: hsl(210 40% 96.1%);
+            color: hsl(222.2 47.4% 11.2%);
+        }
+        .tab-btn.active {
+            background-color: hsl(222.2 47.4% 11.2%);
+            color: hsl(210 40% 98%);
+        }
+    </style>
+
+    <script>
+        const API_BASE_URL = '/api/books';
+
+        // Show message
+        function showMessage(message, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = message;
+            messageEl.className = type === 'success'
+                ? 'rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800 mb-6'
+                : 'rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 mb-6';
+            messageEl.classList.remove('hidden');
+            setTimeout(() => {
+                messageEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-btn').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            event.target.classList.add('active');
+
+            // Load data if view tab
+            if (tabName === 'view') {
+                loadAllBooks();
+            }
+        }
+
+        // Load all books
+        async function loadAllBooks() {
+            try {
+                const response = await fetch(API_BASE_URL);
+                const books = await response.json();
+                displayBooks(books);
+                updateStats(books);
+            } catch (error) {
+                showMessage('Error loading books: ' + error.message, 'error');
+            }
+        }
+
+        // Load available books
+        async function loadAvailableBooks() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/available`);
+                const books = await response.json();
+                displayBooks(books);
+                showMessage('Showing available books only', 'success');
+            } catch (error) {
+                showMessage('Error loading available books: ' + error.message, 'error');
+            }
+        }
+
+        // Display books in table
+        function displayBooks(books) {
+            const tbody = document.getElementById('books-table-body');
+
+            if (books.length === 0) {
+                tbody.innerHTML = `
+                    <tr class="border-b">
+                        <td colspan="7" class="p-8 text-center text-muted-foreground">
+                            <div class="text-4xl mb-2">📚</div>
+                            <div>No books found.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = books.map(book => `
+                <tr class="border-b transition-colors hover:bg-muted/50">
+                    <td class="p-4 align-middle">${book.id}</td>
+                    <td class="p-4 align-middle font-medium">${book.title}</td>
+                    <td class="p-4 align-middle">${book.author}</td>
+                    <td class="p-4 align-middle text-muted-foreground">${book.isbn || 'N/A'}</td>
+                    <td class="p-4 align-middle text-muted-foreground">${book.publishedYear || 'N/A'}</td>
+                    <td class="p-4 align-middle">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${book.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${book.available ? '✓ Available' : '✗ Borrowed'}
+                        </span>
+                    </td>
+                    <td class="p-4 align-middle">
+                        <div class="flex gap-1 flex-wrap">
+                            <button onclick="viewBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-blue-600 text-white hover:bg-blue-700 h-8 px-3">
+                                View
+                            </button>
+                            <button onclick="editBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-amber-600 text-white hover:bg-amber-700 h-8 px-3">
+                                Edit
+                            </button>
+                            ${book.available ?
+                                `<button onclick="borrowBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-green-600 text-white hover:bg-green-700 h-8 px-3">Borrow</button>` :
+                                `<button onclick="returnBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-slate-600 text-white hover:bg-slate-700 h-8 px-3">Return</button>`
+                            }
+                            <button onclick="deleteBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Update statistics
+        function updateStats(books) {
+            const totalBooks = books.length;
+            const availableBooks = books.filter(b => b.available).length;
+            const borrowedBooks = totalBooks - availableBooks;
+
+            document.getElementById('total-books').textContent = totalBooks;
+            document.getElementById('available-books').textContent = availableBooks;
+            document.getElementById('borrowed-books').textContent = borrowedBooks;
+        }
+
+        // Add book form submission
+        document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const book = {
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                isbn: document.getElementById('isbn').value || null,
+                publishedYear: document.getElementById('publishedYear').value ?
+                    parseInt(document.getElementById('publishedYear').value) : null,
+                available: document.getElementById('available').checked
+            };
+
+            try {
+                const response = await fetch(API_BASE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(book)
+                });
+
+                if (response.ok) {
+                    showMessage('Book added successfully!', 'success');
+                    document.getElementById('add-book-form').reset();
+                    document.getElementById('available').checked = true;
+
+                    // Switch to view tab
+                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+                    document.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
+                    document.getElementById('view-tab').classList.remove('hidden');
+                    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+
+                    loadAllBooks();
+                } else {
+                    showMessage('Error adding book', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        });
+
+        // View book details
+        async function viewBook(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`);
+                const book = await response.json();
+                alert(`Book Details:\n\nID: ${book.id}\nTitle: ${book.title}\nAuthor: ${book.author}\nISBN: ${book.isbn || 'N/A'}\nYear: ${book.publishedYear || 'N/A'}\nStatus: ${book.available ? 'Available' : 'Borrowed'}`);
+            } catch (error) {
+                showMessage('Error loading book details: ' + error.message, 'error');
+            }
+        }
+
+        // Edit book
+        async function editBook(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`);
+                const book = await response.json();
+
+                document.getElementById('edit-id').value = book.id;
+                document.getElementById('edit-title').value = book.title;
+                document.getElementById('edit-author').value = book.author;
+                document.getElementById('edit-isbn').value = book.isbn || '';
+                document.getElementById('edit-publishedYear').value = book.publishedYear || '';
+                document.getElementById('edit-available').checked = book.available;
+
+                document.getElementById('edit-modal').classList.remove('hidden');
+            } catch (error) {
+                showMessage('Error loading book for editing: ' + error.message, 'error');
+            }
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        // Edit book form submission
+        document.getElementById('edit-book-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('edit-id').value;
+            const book = {
+                title: document.getElementById('edit-title').value,
+                author: document.getElementById('edit-author').value,
+                isbn: document.getElementById('edit-isbn').value || null,
+                publishedYear: document.getElementById('edit-publishedYear').value ?
+                    parseInt(document.getElementById('edit-publishedYear').value) : null,
+                available: document.getElementById('edit-available').checked
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(book)
+                });
+
+                if (response.ok) {
+                    showMessage('Book updated successfully!', 'success');
+                    closeEditModal();
+                    loadAllBooks();
+                } else {
+                    showMessage('Error updating book', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        });
+
+        // Delete book
+        async function deleteBook(id) {
+            if (!confirm('Are you sure you want to delete this book?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showMessage('Book deleted successfully!', 'success');
+                    loadAllBooks();
+                } else {
+                    showMessage('Error deleting book', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Borrow book
+        async function borrowBook(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}/borrow`, {
+                    method: 'PUT'
+                });
+
+                if (response.ok) {
+                    showMessage('Book borrowed successfully!', 'success');
+                    loadAllBooks();
+                } else if (response.status === 409) {
+                    showMessage('Book is already borrowed', 'error');
+                } else {
+                    showMessage('Error borrowing book', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Return book
+        async function returnBook(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${id}/return`, {
+                    method: 'PUT'
+                });
+
+                if (response.ok) {
+                    showMessage('Book returned successfully!', 'success');
+                    loadAllBooks();
+                } else if (response.status === 409) {
+                    showMessage('Book is already available', 'error');
+                } else {
+                    showMessage('Error returning book', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Search by author
+        async function searchByAuthor() {
+            const author = document.getElementById('search-author').value.trim();
+
+            if (!author) {
+                showMessage('Please enter an author name', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/search?author=${encodeURIComponent(author)}`);
+                const books = await response.json();
+
+                const resultsContainer = document.getElementById('search-results');
+
+                if (books.length === 0) {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center p-8 text-muted-foreground">
+                            <div class="text-4xl mb-2">🔍</div>
+                            <div>No books found by author "${author}"</div>
+                        </div>
+                    `;
+                } else {
+                    resultsContainer.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-4">Search Results (${books.length} book${books.length > 1 ? 's' : ''} found)</h3>
+                        <div class="rounded-md border overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-muted/50">
+                                    <tr class="border-b">
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Title</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Author</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ISBN</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Year</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="[&_tr:last-child]:border-0">
+                                    ${books.map(book => `
+                                        <tr class="border-b transition-colors hover:bg-muted/50">
+                                            <td class="p-4 align-middle">${book.id}</td>
+                                            <td class="p-4 align-middle font-medium">${book.title}</td>
+                                            <td class="p-4 align-middle">${book.author}</td>
+                                            <td class="p-4 align-middle text-muted-foreground">${book.isbn || 'N/A'}</td>
+                                            <td class="p-4 align-middle text-muted-foreground">${book.publishedYear || 'N/A'}</td>
+                                            <td class="p-4 align-middle">
+                                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${book.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                    ${book.available ? '✓ Available' : '✗ Borrowed'}
+                                                </span>
+                                            </td>
+                                            <td class="p-4 align-middle">
+                                                <div class="flex gap-1 flex-wrap">
+                                                    <button onclick="viewBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 h-8 px-3">View</button>
+                                                    <button onclick="editBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors bg-amber-600 text-white hover:bg-amber-700 h-8 px-3">Edit</button>
+                                                    <button onclick="deleteBook(${book.id})" class="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors bg-destructive text-destructive-foreground hover:bg-destructive/90 h-8 px-3">Delete</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                showMessage('Error searching books: ' + error.message, 'error');
+            }
+        }
+
+        // Search on Enter key
+        document.getElementById('search-author').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchByAuthor();
+            }
+        });
+
+        // Load books on page load
+        window.addEventListener('load', () => {
+            loadAllBooks();
+        });
+    </script>
+</body>
+</html>
