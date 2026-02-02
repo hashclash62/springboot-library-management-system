@@ -5,6 +5,10 @@ pipeline {
         jdk 'jdk17'
     }
 
+    environment {
+            HOME = "${env.WORKSPACE}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
